@@ -6,6 +6,14 @@ use bevy_rapier3d::prelude::*;
 
 use std::f32::consts::*;
 
+#[derive(Component, Clone, Debug)]
+struct DroneMotors {
+    left_front: f32,
+    right_front: f32,
+    left_rear: f32,
+    right_rear: f32,
+}
+
 fn main() {
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
