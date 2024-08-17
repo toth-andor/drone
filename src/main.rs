@@ -14,6 +14,55 @@ struct DroneMotors {
     right_rear: f32,
 }
 
+fn vec_to_3d(v: Vec4) -> Vec3 {
+    Vec3::new(v.x, v.y, v.z)
+}
+
+fn calculate_forces(mut drones: Query<(&mut ExternalForce, &DroneMotors, &Transform)>) {
+    for (mut force, motors, transform) in &mut drones {
+        let trans_mat = transform.compute_matrix();
+        let motor_speed_and_pos = [
+            (
+                motors.left_front,
+                vec_to_3d(trans_mat * Vec4::new(1.8, 0.0, 1.8, 0.0)),
+            ),
+            (
+                motors.right_front,
+                vec_to_3d(trans_mat * Vec4::new(-1.8, 0.0, 1.8, 0.0)),
+            ),
+            (
+                motors.left_rear,
+                vec_to_3d(trans_mat * Vec4::new(1.8, 0.0, -1.8, 0.0)),
+            ),
+            (
+                motors.right_rear,
+                vec_to_3d(trans_mat * Vec4::new(-1.8, 0.0, -1.8, 0.0)),
+            ),
+        ];
+        force.force = Vec3::ZERO;
+        force.torque = Vec3::ZERO;
+
+        for (motor_speed, motor_pos) in motor_speed_and_pos {
+            let motor_force = vec_to_3d(trans_mat * (motor_speed * Vec4::new(0.0, 1.0, 0.0, 0.0)));
+            force.torque += motor_pos.cross(motor_force);
+            force.force += motor_force;
+        }
+
+        force.torque += 0.2
+            * vec_to_3d(
+                trans_mat
+                    * Vec4::new(
+                        0.0,
+                        motors.left_front + motors.right_rear
+                            - motors.right_front
+                            - motors.left_rear,
+                        0.0,
+                        0.0,
+                    ),
+            );
+    }
+}
+
 fn main() {
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
@@ -23,6 +72,7 @@ fn main() {
         .add_systems(Startup, setup_graphics)
         .add_systems(Startup, setup_physics)
         .add_systems(Update, animate_light_direction)
+        .add_systems(Update, calculate_forces)
         .run();
 }
 
@@ -60,8 +110,14 @@ fn setup_physics(
             ..Default::default()
         }))
         .insert(ExternalForce {
-            force: Vec3::new(0.0, 1.0, 0.0),
-            torque: Vec3::new(0.1, 0.3, 0.1),
+            force: Vec3::new(0.0, 0.0, 0.0),
+            torque: Vec3::new(0.0, 0.0, 0.0),
+        })
+        .insert(DroneMotors {
+            left_front: 10.0,
+            right_front: 15.0,
+            left_rear: 15.0,
+            right_rear: 10.0,
         });
 }
 
