@@ -6,12 +6,22 @@ use bevy_rapier3d::prelude::*;
 
 use std::f32::consts::*;
 
+use controller::{Controller, MotorSpeeds};
+
 #[derive(Component, Clone, Debug)]
 struct DroneMotors {
     left_front: f32,
     right_front: f32,
     left_rear: f32,
     right_rear: f32,
+}
+impl DroneMotors {
+    fn readSpeeds(&mut self, m: &MotorSpeeds) {
+        self.left_front = m.get_front_left();
+        self.right_front = m.get_front_right();
+        self.left_rear = m.get_rear_left();
+        self.right_rear = m.get_rear_right();
+    }
 }
 
 fn vec_to_3d(v: Vec4) -> Vec3 {
@@ -63,6 +73,11 @@ fn calculate_forces(mut drones: Query<(&mut ExternalForce, &DroneMotors, &Transf
     }
 }
 
+#[derive(Resource)]
+struct ResController {
+    c: Controller,
+}
+
 fn main() {
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
@@ -73,6 +88,9 @@ fn main() {
         .add_systems(Startup, setup_physics)
         .add_systems(Update, animate_light_direction)
         .add_systems(Update, calculate_forces)
+        .insert_resource(ResController {
+            c: Controller::new(),
+        })
         .run();
 }
 
