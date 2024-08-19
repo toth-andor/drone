@@ -2,3 +2,9 @@
 members = ["simulator", "driver", "controller"]
 resolver = "2"
 edition = "2021"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
